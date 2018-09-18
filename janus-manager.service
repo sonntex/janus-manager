@@ -1,0 +1,14 @@
+[Unit]
+Description=janus-manager
+After=syslog.target
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/sysconfig/janus-manager
+Restart=always
+KillMode=process
+ExecStartPre=killall janus
+ExecStart=/usr/bin/janus-manager $OPTIONS
+
+[Install]
+WantedBy=multi-user.target
