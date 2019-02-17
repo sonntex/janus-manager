@@ -168,6 +168,18 @@ static bool send_session_stream_remove(
     return true;
 }
 
+static nlohmann::json stream_to_json(const stream_info& stream)
+{
+    nlohmann::json res_json;
+    res_json["id"] = stream.id;
+    res_json["video_port"] = stream.port;
+    res_json["audio_port"] = stream.port + 2;
+    res_json["expires_at"] =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            stream.expires_at.time_since_epoch()).count();
+    return res_json;
+}
+
 static void handle_ok(http_req& req, http_res& res)
 { res = http_res(boost::beast::http::status::ok, req.version()); }
 static void handle_internal_server_error(http_req& req, http_res& res)
@@ -200,12 +212,19 @@ static void handle_streams_post(http_req& req, http_res& res)
     streams[stream.id] = std::move(stream);
     handle_ok(req, res);
     nlohmann::json res_json;
-    res_json["stream"]["id"] = stream.id;
-    res_json["stream"]["video_port"] = stream.port;
-    res_json["stream"]["audio_port"] = stream.port + 2;
-    res_json["stream"]["expires_at"] =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            stream.expires_at.time_since_epoch()).count();
+    res_json["stream"] = stream_to_json(stream);
+    res.body() = res_json.dump();
+    res.prepare_payload();
+}
+
+static void handle_streams_get(http_req& req, http_res& res)
+{
+    handle_ok(req, res);
+    nlohmann::json res_json;
+    for (auto it = streams.begin(); it != streams.end(); ++it) {
+        auto& stream = it->second;
+        res_json["streams"].push_back(stream_to_json(stream));
+    }
     res.body() = res_json.dump();
     res.prepare_payload();
 }
@@ -215,12 +234,7 @@ static void handle_streams_id_get(http_req& req, http_res& res,
 {
     handle_ok(req, res);
     nlohmann::json res_json;
-    res_json["stream"]["id"] = stream.id;
-    res_json["stream"]["video_port"] = stream.port;
-    res_json["stream"]["audio_port"] = stream.port + 2;
-    res_json["stream"]["expires_at"] =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            stream.expires_at.time_since_epoch()).count();
+    res_json["stream"] = stream_to_json(stream);
     res.body() = res_json.dump();
     res.prepare_payload();
 }
@@ -231,12 +245,7 @@ static void handle_streams_id_put(http_req& req, http_res& res,
     keep_alive(stream);
     handle_ok(req, res);
     nlohmann::json res_json;
-    res_json["stream"]["id"] = stream.id;
-    res_json["stream"]["video_port"] = stream.port;
-    res_json["stream"]["audio_port"] = stream.port + 2;
-    res_json["stream"]["expires_at"] =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            stream.expires_at.time_since_epoch()).count();
+    res_json["stream"] = stream_to_json(stream);
     res.body() = res_json.dump();
     res.prepare_payload();
 }
@@ -248,6 +257,7 @@ static void handle(http_req& req, http_res& res)
         path.is_absolute() && *std::next(path.begin(), 1) == "streams") {
         switch (req.method()) {
         case boost::beast::http::verb::post: handle_streams_post(req, res); break;
+        case boost::beast::http::verb::get: handle_streams_get(req, res); break;
         default: handle_method_not_allowed(req, res); break;
         }
         return;
