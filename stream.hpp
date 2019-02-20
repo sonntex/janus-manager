@@ -16,7 +16,7 @@ using stream_info_map = std::map<std::uint64_t, stream_info>;
 stream_info make_stream(const stream_info_map& streams,
     std::uint16_t min_port, std::uint16_t max_port, std::uint16_t& port);
 
-void keep_alive(stream_info& stream);
+void keep_alive(stream_info& stream, std::chrono::system_clock::time_point expires_at);
 
 bool expired(const stream_info& stream, std::chrono::system_clock::time_point now);
 

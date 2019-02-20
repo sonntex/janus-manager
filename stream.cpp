@@ -59,9 +59,9 @@ stream_info make_stream(const stream_info_map& streams,
     return res;
 }
 
-void keep_alive(stream_info& stream)
+void keep_alive(stream_info& stream, std::chrono::system_clock::time_point expires_at)
 {
-    stream.expires_at = std::chrono::system_clock::now() + std::chrono::seconds(60);
+    stream.expires_at = expires_at;
 }
 
 bool expired(const stream_info& stream, std::chrono::system_clock::time_point now)

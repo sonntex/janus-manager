@@ -21,6 +21,8 @@ add_executable(janus-manager
     http.cpp
     stream.hpp
     stream.cpp
+    uri.hpp
+    uri.cpp
     main.cpp)
 
 target_link_libraries(janus-manager boost_system boost_filesystem boost_log)
