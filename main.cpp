@@ -11,8 +11,6 @@
 // #include <boost/log/utility/setup/console.hpp>
 // #include <boost/log/utility/setup/file.hpp>
 #include <boost/process.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
 
 static boost::log::trivial::severity_level severity = boost::log::trivial::info;
 static std::string client_host = "127.0.0.1";
