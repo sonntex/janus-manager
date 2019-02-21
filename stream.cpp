@@ -64,18 +64,13 @@ void keep_alive(stream_info& stream, std::chrono::system_clock::time_point expir
     stream.expires_at = expires_at;
 }
 
-bool expired(const stream_info& stream, std::chrono::system_clock::time_point now)
-{
-    return stream.expires_at <= now;
-}
-
 stream_info_map expired(stream_info_map& streams)
 {
     auto now = std::chrono::system_clock::now();
     stream_info_map expires;
     for (auto it = streams.begin(); it != streams.end(); ) {
         auto& stream = it->second;
-        if (expired(stream, now)) {
+        if (stream.expires_at <= now) {
             expires[stream.id] = std::move(stream);
             it = streams.erase(it);
         } else ++it;
