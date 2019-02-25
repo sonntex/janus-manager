@@ -15,11 +15,12 @@
 static boost::log::trivial::severity_level severity = boost::log::trivial::info;
 static std::string client_host = "127.0.0.1";
 static std::uint16_t client_port = 8088;
+static std::uint16_t client_admin_port = 8089;
 static std::uint16_t client_rtp_port_min = 20000;
 static std::uint16_t client_rtp_port_max = 20999;
 static std::uint16_t client_rtp_port = client_rtp_port_min;
 static std::string server_host = "127.0.0.1";
-static std::uint16_t server_port = 8089;
+static std::uint16_t server_port = 8087;
 static stream_info_map streams;
 
 static boost::asio::io_context ioc;
