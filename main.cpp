@@ -6,10 +6,10 @@
 
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
-// #include <boost/log/sinks/text_file_backend.hpp>
-// #include <boost/log/utility/setup/common_attributes.hpp>
-// #include <boost/log/utility/setup/console.hpp>
-// #include <boost/log/utility/setup/file.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/file.hpp>
 #include <boost/process.hpp>
 
 static boost::log::trivial::severity_level severity = boost::log::trivial::info;
@@ -424,19 +424,18 @@ static void work()
 static void init(int argc, char* argv[])
 {
     std::srand(std::time(nullptr));
-    boost::log::core::get()->set_filter(boost::log::trivial::severity >= severity);
-    // boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
-    // auto sink0 = boost::log::add_console_log(std::cerr,
-    //     boost::log::keywords::format = "[%TimeStamp%][%Severity%]: %Message%");
-    // sink0->set_filter(boost::log::trivial::severity >= severity);
-    // auto sink1 = boost::log::add_file_log(
-    //     boost::log::keywords::format = "[%TimeStamp%][%Severity%]: %Message%",
-    //     boost::log::keywords::file_name = std::string("/var/log/") + application(argv[0]) + ".log.%N",
-    //     boost::log::keywords::rotation_size = 1024 * 1024 * 10,
-    //     boost::log::keywords::auto_flush = true,
-    //     boost::log::keywords::open_mode = std::ios_base::app);
-    // sink1->set_filter(boost::log::trivial::severity >= severity);
-    // boost::log::add_common_attributes();
+    boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
+    auto sink0 = boost::log::add_console_log(std::cerr,
+        boost::log::keywords::format = "[%TimeStamp%][%Severity%]: %Message%");
+    sink0->set_filter(boost::log::trivial::severity >= severity);
+    auto sink1 = boost::log::add_file_log(
+        boost::log::keywords::format = "[%TimeStamp%][%Severity%]: %Message%",
+        boost::log::keywords::file_name = std::string("/var/log/") + application(argv[0]) + ".log.%N",
+        boost::log::keywords::rotation_size = 1024 * 1024 * 10,
+        boost::log::keywords::auto_flush = true,
+        boost::log::keywords::open_mode = std::ios_base::app);
+    sink1->set_filter(boost::log::trivial::severity >= severity);
+    boost::log::add_common_attributes();
 }
 
 static void usage(int argc, char* argv[])
