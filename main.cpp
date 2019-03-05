@@ -13,6 +13,7 @@
 #include <boost/process.hpp>
 
 static boost::log::trivial::severity_level severity = boost::log::trivial::info;
+static std::string client_conf = "/etc/janus";
 static std::string client_host = "127.0.0.1";
 static std::uint16_t client_port = 8088;
 static std::uint16_t client_admin_port = 8089;
@@ -359,8 +360,9 @@ static void remove(const stream_info_map& streams)
 
 static void spawn()
 {
-    BOOST_LOG_TRIVIAL(debug) << "spawn";
-    process = boost::process::child(boost::process::search_path("janus"),
+    auto path = boost::process::search_path("janus");
+    BOOST_LOG_TRIVIAL(debug) << "spawn " << path.string();
+    process = boost::process::child(path, std::string("--configs-folder=") + client_conf,
         boost::process::std_out > boost::process::null,
         boost::process::std_err > boost::process::null);
     std::size_t retry = 0;
@@ -411,6 +413,16 @@ static void start_deadline()
 
 static void work()
 {
+    BOOST_LOG_TRIVIAL(info) << "init";
+    BOOST_LOG_TRIVIAL(info) << "client conf: " << client_conf;
+    BOOST_LOG_TRIVIAL(info) << "client host: " << client_host;
+    BOOST_LOG_TRIVIAL(info) << "client port: " << client_port;
+    BOOST_LOG_TRIVIAL(info) << "client admin port: " << client_admin_port;
+    BOOST_LOG_TRIVIAL(info) << "client rtp port min: " << client_rtp_port_min;
+    BOOST_LOG_TRIVIAL(info) << "client rtp port max: " << client_rtp_port_max;
+    BOOST_LOG_TRIVIAL(info) << "server host: " << server_host;
+    BOOST_LOG_TRIVIAL(info) << "server port: " << server_port;
+    BOOST_LOG_TRIVIAL(info) << "work";
     spawn();
     start_deadline();
     http_server s(ioc, make_endpoint(server_host, server_port), handle_safe);
@@ -419,6 +431,7 @@ static void work()
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(fatal) << "server error: " << e.what();
     }
+    BOOST_LOG_TRIVIAL(info) << "done";
 }
 
 static void init(int argc, char* argv[])
@@ -443,6 +456,7 @@ static void usage(int argc, char* argv[])
     std::printf("Usage: %s [OPTIONS]", application(argv[0]).c_str());
     std::printf("\n  -h help");
     std::printf("\n  -v verbose");
+    std::printf("\n  -d arg (%s) client conf", client_conf.c_str());
     std::printf("\n  -q arg (%u) client port", client_port);
     std::printf("\n  -y arg (%u) client min rtp port", client_rtp_port_min);
     std::printf("\n  -z arg (%u) client max rtp port", client_rtp_port_max);
@@ -456,9 +470,10 @@ static void usage(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     int ret;
-    while ((ret = getopt(argc, argv, "vq:y:z:l:p:h")) != -1) {
+    while ((ret = getopt(argc, argv, "vq:d:y:z:l:p:h")) != -1) {
         switch (ret) {
         case 'v': severity = boost::log::trivial::trace; break;
+        case 'd': client_conf = optarg; break;
         case 'q': client_port = std::stoul(optarg); break;
         case 'y': client_rtp_port_min = std::stoul(optarg); break;
         case 'z': client_rtp_port_max = std::stoul(optarg); break;
