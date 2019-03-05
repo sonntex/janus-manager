@@ -3,7 +3,8 @@
 boost::asio::ip::tcp::endpoint make_endpoint(const std::string& host, std::uint16_t port)
 { return {boost::asio::ip::make_address(host), port}; }
 
-http_client::http_client(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint ep,
+http_client::http_client(boost::asio::io_context& ioc,
+    boost::asio::ip::tcp::endpoint ep,
     std::chrono::seconds timeout)
     : ioc_(ioc), socket_(ioc), deadline_(ioc), timeout_(timeout)
 {
@@ -68,8 +69,8 @@ void http_client::operator()(http_req& req, http_res& res)
     recv(res);
 }
 
-http_server::http_server(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint ep,
-    http_handler handler,
+http_server::http_server(boost::asio::io_context& ioc,
+    boost::asio::ip::tcp::endpoint ep, http_handler handler,
     std::chrono::seconds timeout)
   : ioc_(ioc), acceptor_(ioc, ep), socket_(ioc), deadline_(ioc), timeout_(timeout), handler_(handler)
 {
