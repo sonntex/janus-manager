@@ -1,14 +1,8 @@
 #include "uri.hpp"
 
-#include <regex>
-
-uri make_uri(const std::string& value)
+uri::uri(boost::filesystem::path path, std::string query, std::string fragment)
+  : path(path) // path.remove_trailing_separator()
+  , query(query)
+  , fragment(fragment)
 {
-    std::regex expr("(/?[^ #?]*)\\x3f?([^ ?#]*)\\x23?([^ ?#]*)");
-    std::smatch what;
-    if (!std::regex_match(value, what, expr))
-        throw std::out_of_range("bad uri");
-    return {{what[1].first, what[1].second},
-            {what[2].first, what[2].second},
-            {what[3].first, what[3].second}};
 }

@@ -64,8 +64,8 @@ static bool send(
             BOOST_LOG_TRIVIAL(error) << "parse error: " << e.what();
             return false;
         }
-        BOOST_LOG_TRIVIAL(trace) << "send: " << req_json;
-        BOOST_LOG_TRIVIAL(trace) << "recv: " << res_json;
+        BOOST_LOG_TRIVIAL(trace) << "client send: " << req_json;
+        BOOST_LOG_TRIVIAL(trace) << "client recv: " << res_json;
         return true;
     }
     return false;
@@ -275,7 +275,7 @@ static void handle_streams_id_put(http_req& req, http_res& res, stream_info& str
 
 static void handle(http_req& req, http_res& res)
 {
-    auto uri = make_uri(std::string(req.target()));
+    auto uri = make_uri(req.target().begin(), req.target().end());
     if (std::distance(uri.path.begin(), uri.path.end()) == 2 &&
         uri.path.is_absolute() && std::next(uri.path.begin(), 1)->string() == "streams") {
         switch (req.method()) {
@@ -284,8 +284,7 @@ static void handle(http_req& req, http_res& res)
         case boost::beast::http::verb::put: handle_streams_put(req, res, expires_at(uri.query)); break;
         default: handle_method_not_allowed(req, res); break;
         }
-        return;
-    }
+    } else
     if (std::distance(uri.path.begin(), uri.path.end()) == 3 &&
         uri.path.is_absolute() && std::next(uri.path.begin(), 1)->string() == "streams") {
         auto it = streams.find(std::stoul(std::next(uri.path.begin(), 2)->string()));
@@ -299,9 +298,12 @@ static void handle(http_req& req, http_res& res)
         case boost::beast::http::verb::put: handle_streams_id_put(req, res, stream, expires_at(uri.query)); break;
         default: handle_method_not_allowed(req, res); break;
         }
-        return;
-    }
-    handle_not_found(req, res);
+    } else
+        handle_not_found(req, res);
+    BOOST_LOG_TRIVIAL(trace) << "handle:"
+        << " method=" << boost::beast::http::to_string(req.method())
+        << " target=" << req.target()
+        << " status=" << res.result_int();
 }
 
 static void handle_safe(http_req& req, http_res& res)
