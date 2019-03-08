@@ -27,5 +27,6 @@ add_executable(janus-manager
 
 target_link_libraries(janus-manager boost_system boost_thread boost_filesystem boost_log boost_log_setup)
 
-install(TARGETS janus-manager DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(FILES janus-manager.service DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/system)
+install(TARGETS janus-manager DESTINATION /usr/bin)
+install(FILES janus-manager.service DESTINATION /usr/lib/systemd/system)
+install(FILES janus-manager.env DESTINATION /etc/sysconfig)
