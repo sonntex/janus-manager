@@ -1,25 +1,18 @@
 #pragma once
 
-#include <boost/filesystem/path.hpp>
-#include <regex>
+#include <boost/filesystem.hpp>
+#include <map>
 
 struct uri
 {
-    uri(boost::filesystem::path path, std::string query, std::string fragment);
-    boost::filesystem::path path;
+    std::string path;
     std::string query;
     std::string fragment;
 };
 
-template <typename Iterator>
-uri make_uri(Iterator first, Iterator last)
-{
-    std::regex expr("(/?[^ #?]*)\\x3f?([^ ?#]*)\\x23?([^ ?#]*)");
-    std::match_results<Iterator> what;
-    if (!std::regex_match(first, last, what, expr))
-        throw std::out_of_range("bad uri");
-    return uri(
-        {what[1].first, what[1].second},
-        {what[2].first, what[2].second},
-        {what[3].first, what[3].second});
-}
+using uri_path = boost::filesystem::path;
+using uri_query = std::map<std::string, std::string>;
+
+uri make_uri(const std::string& s);
+uri_path make_path(const std::string& s);
+uri_query make_query(const std::string& s);

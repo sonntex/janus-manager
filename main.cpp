@@ -4,6 +4,7 @@
 #include "stream.hpp"
 #include "uri.hpp"
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/sinks/text_file_backend.hpp>
@@ -38,13 +39,24 @@ static std::string make_target(std::uint64_t session_id)
 static std::string make_target(std::uint64_t session_id, std::uint64_t session_plugin_id)
 { return make_target() + "/" + std::to_string(session_id) + "/" + std::to_string(session_plugin_id); }
 
-static std::chrono::system_clock::time_point expires_at(const std::string& query)
+static std::chrono::system_clock::time_point query_expires_at(const uri_query& query)
 {
-    if (query == "expires_at=min")
-        return std::chrono::system_clock::time_point::min();
-    if (query == "expires_at=max")
-        return std::chrono::system_clock::time_point::max();
-    return std::chrono::system_clock::now() + std::chrono::seconds(60);
+    try {
+        std::string value = query.at("expires_at");
+        if (value == "min")
+            return std::chrono::system_clock::time_point::min();
+        if (value == "max")
+            return std::chrono::system_clock::time_point::max();
+        return std::chrono::system_clock::now() + std::chrono::seconds(std::stoi(value));
+    } catch (const std::out_of_range&) {
+        return std::chrono::system_clock::now() + std::chrono::seconds(60);
+    }
+}
+
+static std::string query_host(const uri_query& query)
+{
+    std::string value = query.at("host");
+    return value;
 }
 
 static bool send(
@@ -202,23 +214,25 @@ static void handle_not_found(http_req& req, http_res& res)
 static void handle_method_not_allowed(http_req& req, http_res& res)
 { res = http_res(boost::beast::http::status::method_not_allowed, req.version()); }
 
-static void handle_streams_post(http_req& req, http_res& res,
-    std::chrono::system_clock::time_point expires_at)
+static void handle_streams_post(http_req& req, http_res& res, const uri_query& query)
 {
-    auto stream = make_stream(streams,
-        client_rtp_port_min, client_rtp_port_max, client_rtp_port);
-    boost::asio::io_context ioc;
-    http_client c(ioc, make_endpoint(client_host, client_port));
-    std::uint64_t session_id;
-    std::uint64_t session_plugin_id;
-    if (!send_session_create(c, session_id) ||
-        !send_session_plugin_attach(c, session_id, session_plugin_id) ||
-        !send_session_stream_create(c, session_id, session_plugin_id, stream)) {
-        BOOST_LOG_TRIVIAL(error) << "client error";
-        handle_internal_server_error(req, res);
-        return;
+    bool already_existed = false;
+    auto stream = make_stream(streams, query_host(query),
+        client_rtp_port_min, client_rtp_port_max, client_rtp_port, already_existed);
+    if (!already_existed) {
+        boost::asio::io_context ioc;
+        http_client c(ioc, make_endpoint(client_host, client_port));
+        std::uint64_t session_id;
+        std::uint64_t session_plugin_id;
+        if (!send_session_create(c, session_id) ||
+            !send_session_plugin_attach(c, session_id, session_plugin_id) ||
+            !send_session_stream_create(c, session_id, session_plugin_id, stream)) {
+            BOOST_LOG_TRIVIAL(error) << "client error";
+            handle_internal_server_error(req, res);
+            return;
+        }
     }
-    keep_alive(stream, expires_at);
+    keep_alive(stream, query_expires_at(query));
     streams[stream.id] = std::move(stream);
     handle_ok(req, res);
     nlohmann::json res_json;
@@ -227,7 +241,7 @@ static void handle_streams_post(http_req& req, http_res& res,
     res.prepare_payload();
 }
 
-static void handle_streams_get(http_req& req, http_res& res)
+static void handle_streams_get(http_req& req, http_res& res, const uri_query& query)
 {
     handle_ok(req, res);
     nlohmann::json res_json;
@@ -239,21 +253,21 @@ static void handle_streams_get(http_req& req, http_res& res)
     res.prepare_payload();
 }
 
-static void handle_streams_put(http_req& req, http_res& res,
-    std::chrono::system_clock::time_point expires_at)
+static void handle_streams_put(http_req& req, http_res& res, const uri_query& query)
 {
     handle_ok(req, res);
     nlohmann::json res_json;
     for (auto it = streams.begin(); it != streams.end(); ++it) {
         auto& stream = it->second;
-        keep_alive(stream, expires_at);
+        keep_alive(stream, query_expires_at(query));
         res_json["streams"].push_back(stream_to_json(stream));
     }
     res.body() = res_json.dump();
     res.prepare_payload();
 }
 
-static void handle_streams_id_get(http_req& req, http_res& res, const stream_info& stream)
+static void handle_streams_id_get(http_req& req, http_res& res, const uri_query& query,
+    stream_info& stream)
 {
     handle_ok(req, res);
     nlohmann::json res_json;
@@ -262,10 +276,10 @@ static void handle_streams_id_get(http_req& req, http_res& res, const stream_inf
     res.prepare_payload();
 }
 
-static void handle_streams_id_put(http_req& req, http_res& res, stream_info& stream,
-    std::chrono::system_clock::time_point expires_at)
+static void handle_streams_id_put(http_req& req, http_res& res, const uri_query& query,
+    stream_info& stream)
 {
-    keep_alive(stream, expires_at);
+    keep_alive(stream, query_expires_at(query));
     handle_ok(req, res);
     nlohmann::json res_json;
     res_json["stream"] = stream_to_json(stream);
@@ -275,45 +289,50 @@ static void handle_streams_id_put(http_req& req, http_res& res, stream_info& str
 
 static void handle(http_req& req, http_res& res)
 {
-    auto uri = make_uri(req.target().begin(), req.target().end());
-    if (std::distance(uri.path.begin(), uri.path.end()) == 2 &&
-        uri.path.is_absolute() && std::next(uri.path.begin(), 1)->string() == "streams") {
+    auto uri = make_uri(std::string(req.target()));
+    auto path = make_path(uri.path);
+    auto query = make_query(uri.query);
+    if (std::distance(path.begin(), path.end()) == 2 &&
+        path.is_absolute() && std::next(path.begin(), 1)->string() == "streams") {
         switch (req.method()) {
-        case boost::beast::http::verb::post: handle_streams_post(req, res, expires_at(uri.query)); break;
-        case boost::beast::http::verb::get: handle_streams_get(req, res); break;
-        case boost::beast::http::verb::put: handle_streams_put(req, res, expires_at(uri.query)); break;
+        case boost::beast::http::verb::post: handle_streams_post(req, res, query); break;
+        case boost::beast::http::verb::get: handle_streams_get(req, res, query); break;
+        case boost::beast::http::verb::put: handle_streams_put(req, res, query); break;
         default: handle_method_not_allowed(req, res); break;
         }
-    } else
-    if (std::distance(uri.path.begin(), uri.path.end()) == 3 &&
-        uri.path.is_absolute() && std::next(uri.path.begin(), 1)->string() == "streams") {
-        auto it = streams.find(std::stoul(std::next(uri.path.begin(), 2)->string()));
+        return;
+    }
+    if (std::distance(path.begin(), path.end()) == 3 &&
+        path.is_absolute() && std::next(path.begin(), 1)->string() == "streams") {
+        auto it = streams.find(std::stoul(std::next(path.begin(), 2)->string()));
         if (it == streams.end()) {
             handle_not_found(req, res);
             return;
         }
         auto& stream = it->second;
         switch (req.method()) {
-        case boost::beast::http::verb::get: handle_streams_id_get(req, res, stream); break;
-        case boost::beast::http::verb::put: handle_streams_id_put(req, res, stream, expires_at(uri.query)); break;
+        case boost::beast::http::verb::get: handle_streams_id_get(req, res, query, stream); break;
+        case boost::beast::http::verb::put: handle_streams_id_put(req, res, query, stream); break;
         default: handle_method_not_allowed(req, res); break;
         }
-    } else
-        handle_not_found(req, res);
-    BOOST_LOG_TRIVIAL(trace) << "handle:"
-        << " method=" << boost::beast::http::to_string(req.method())
-        << " target=" << req.target()
-        << " status=" << res.result_int();
+        return;
+    }
+    handle_not_found(req, res);
 }
 
 static void handle_safe(http_req& req, http_res& res)
 {
+    BOOST_LOG_TRIVIAL(trace) << "handle:"
+        << " method=" << boost::algorithm::to_lower_copy(std::string(boost::beast::http::to_string(req.method())))
+        << " target=" << req.target();
     try {
         handle(req, res);
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << "client error: " << e.what();
         handle_internal_server_error(req, res);
     }
+    BOOST_LOG_TRIVIAL(trace) << "handle:"
+        << " status=" << res.result_int();
 }
 
 static void create(const stream_info_map& streams)

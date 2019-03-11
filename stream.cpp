@@ -51,15 +51,32 @@ static std::uint16_t gen_port(const stream_info_map& streams,
 }
 
 stream_info make_stream(const stream_info_map& streams,
-    std::uint16_t min_port, std::uint16_t max_port, std::uint16_t& port)
+    const std::string& host,
+    std::uint16_t min_port, std::uint16_t max_port, std::uint16_t& port,
+    bool& already_existed)
 {
-    stream_info res;
-    res.id = gen_id(streams);
-    res.port = gen_port(streams, min_port, max_port, port);
-    return res;
+    for (auto it = streams.begin(); it != streams.end(); ++it) {
+        auto& stream = it->second;
+        if (stream.host == host) {
+            already_existed = true;
+            return stream;
+        }
+    }
+    stream_info stream;
+    stream.id = gen_id(streams);
+    stream.host = host;
+    stream.port = gen_port(streams, min_port, max_port, port);
+    already_existed = false;
+    return stream;
 }
 
-void keep_alive(stream_info& stream, std::chrono::system_clock::time_point expires_at)
+void keep_alive(stream_info& stream)
+{
+    keep_alive(stream, std::chrono::system_clock::now() + std::chrono::seconds(60));
+}
+
+void keep_alive(stream_info& stream,
+    std::chrono::system_clock::time_point expires_at)
 {
     stream.expires_at = expires_at;
 }
