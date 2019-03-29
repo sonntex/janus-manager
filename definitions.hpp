@@ -3,8 +3,10 @@
 #include <boost/log/trivial.hpp>
 #include <chrono>
 
-static const std::chrono::seconds default_timeout =
-    std::chrono::seconds(1);
+static const auto default_timeout = std::chrono::seconds(1);
+static const auto timeout_keepalive = std::chrono::seconds(30);
+static const auto timeout_loop = std::chrono::seconds(1);
+static const auto timeout_retries = std::chrono::milliseconds(100);
 
 static const std::size_t retries = 256;
 

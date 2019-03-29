@@ -47,9 +47,9 @@ static std::chrono::system_clock::time_point query_expires_at(const uri_query& q
             return std::chrono::system_clock::time_point::min();
         if (value == "max")
             return std::chrono::system_clock::time_point::max();
-        return std::chrono::system_clock::now() + std::chrono::seconds(std::stoi(value));
+        return std::chrono::system_clock::time_point(std::chrono::seconds(std::stoi(value)));
     } catch (const std::out_of_range&) {
-        return std::chrono::system_clock::now() + std::chrono::seconds(60);
+        return std::chrono::system_clock::now() + timeout_keepalive;
     }
 }
 
@@ -395,7 +395,7 @@ static void spawn()
             if (retry == retries)
                 throw e;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(timeout_retries);
     }
 }
 
@@ -413,7 +413,7 @@ static void respawn()
 
 static void start_deadline()
 {
-    deadline.expires_from_now(std::chrono::seconds(1));
+    deadline.expires_from_now(timeout_loop);
     deadline.async_wait(
         [](boost::system::error_code ec) {
             if (ec == boost::asio::error::operation_aborted)

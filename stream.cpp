@@ -72,7 +72,7 @@ stream_info make_stream(const stream_info_map& streams,
 
 void keep_alive(stream_info& stream)
 {
-    keep_alive(stream, std::chrono::system_clock::now() + std::chrono::seconds(60));
+    keep_alive(stream, std::chrono::system_clock::now() + timeout_keepalive);
 }
 
 void keep_alive(stream_info& stream,
