@@ -29,7 +29,7 @@ static boost::asio::io_context ioc;
 static boost::asio::system_timer deadline(ioc);
 static boost::process::child process;
 
-static std::string application(char* argv0)
+static std::string application(const char* argv0)
 { return boost::filesystem::path(argv0).filename().string(); }
 
 static std::string make_target()
@@ -479,8 +479,8 @@ static void usage(int argc, char* argv[])
     std::printf("\n  -v verbose");
     std::printf("\n  -d arg (%s) client conf", client_conf.c_str());
     std::printf("\n  -q arg (%u) client port", client_port);
-    std::printf("\n  -y arg (%u) client min rtp port", client_rtp_port_min);
-    std::printf("\n  -z arg (%u) client max rtp port", client_rtp_port_max);
+    std::printf("\n  -n arg (%u) client min rtp port", client_rtp_port_min);
+    std::printf("\n  -x arg (%u) client max rtp port", client_rtp_port_max);
     std::printf("\n  -l arg (%s) server host", server_host.c_str());
     std::printf("\n  -p arg (%u) server port", server_port);
     std::printf("\n");
@@ -491,13 +491,13 @@ static void usage(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     int ret;
-    while ((ret = getopt(argc, argv, "vq:d:y:z:l:p:h")) != -1) {
+    while ((ret = getopt(argc, argv, "vd:q:n:x:l:p:h")) != -1) {
         switch (ret) {
         case 'v': severity = boost::log::trivial::trace; break;
         case 'd': client_conf = optarg; break;
         case 'q': client_port = std::stoul(optarg); break;
-        case 'y': client_rtp_port_min = std::stoul(optarg); break;
-        case 'z': client_rtp_port_max = std::stoul(optarg); break;
+        case 'n': client_rtp_port_min = std::stoul(optarg); break;
+        case 'x': client_rtp_port_max = std::stoul(optarg); break;
         case 'l': server_host = optarg; break;
         case 'p': server_port = std::stoul(optarg); break;
         case 'h':
