@@ -28,3 +28,5 @@ private:
 };
 
 template <typename F> guard make_guard(F h) { return guard(h); }
+template <typename F> std::unique_ptr<guard> make_unique_guard(F h) { return std::make_unique<guard>(h); }
+template <typename F> std::shared_ptr<guard> make_shared_guard(F h) { return std::make_shared<guard>(h); }
