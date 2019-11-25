@@ -13,20 +13,20 @@ set(CMAKE_CXX_FLAGS_DEBUG "${FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS "${FLAGS} -std=c++14 -DBOOST_ALL_DYN_LINK")
 
 add_executable(janus-manager
-    json.hpp
-    definitions.hpp
-    hash.hpp
-    hash.cpp
-    http.hpp
-    http.cpp
-    stream.hpp
-    stream.cpp
-    uri.hpp
-    uri.cpp
-    main.cpp)
+    src/json.hpp
+    src/definitions.hpp
+    src/hash.hpp
+    src/hash.cpp
+    src/http.hpp
+    src/http.cpp
+    src/stream.hpp
+    src/stream.cpp
+    src/uri.hpp
+    src/uri.cpp
+    src/main.cpp)
 
 target_link_libraries(janus-manager boost_system boost_thread boost_filesystem boost_log boost_log_setup)
 
 install(TARGETS janus-manager DESTINATION /usr/bin)
-install(FILES janus-manager.service DESTINATION /usr/lib/systemd/system)
-install(FILES janus-manager.env DESTINATION /etc/sysconfig)
+install(FILES share/janus-manager.service DESTINATION /usr/lib/systemd/system)
+install(FILES share/janus-manager.env DESTINATION /etc/sysconfig)
