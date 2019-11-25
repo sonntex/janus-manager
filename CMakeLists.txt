@@ -12,8 +12,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "${FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS "${FLAGS} -std=c++14 -DBOOST_ALL_DYN_LINK")
 
+include_directories(contrib/json/single_include)
+
 add_executable(janus-manager
-    src/json.hpp
     src/definitions.hpp
     src/hash.hpp
     src/hash.cpp

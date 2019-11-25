@@ -1,4 +1,3 @@
-#include "json.hpp"
 #include "hash.hpp"
 #include "http.hpp"
 #include "stream.hpp"
@@ -12,6 +11,8 @@
 #include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/process.hpp>
+
+#include <nlohmann/json.hpp>
 
 static boost::log::trivial::severity_level severity = boost::log::trivial::info;
 static std::string client_conf = "/etc/janus";
