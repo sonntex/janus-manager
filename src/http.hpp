@@ -12,8 +12,13 @@
 boost::asio::ip::tcp::endpoint make_endpoint(
     const std::string& host, std::uint16_t port);
 
-using http_req = boost::beast::http::request<boost::beast::http::string_body>;
-using http_res = boost::beast::http::response<boost::beast::http::string_body>;
+using http_req =
+    boost::beast::http::request<
+        boost::beast::http::string_body>;
+
+using http_res =
+    boost::beast::http::response<
+        boost::beast::http::string_body>;
 
 using http_handler = std::function<void(http_req&, http_res&)>;
 
@@ -21,7 +26,7 @@ class http_client
 {
 public:
     http_client(boost::asio::io_context& ioc,
-	boost::asio::ip::tcp::endpoint ep,
+        boost::asio::ip::tcp::endpoint ep,
         std::chrono::seconds timeout = default_timeout);
     http_client(const http_client&) = delete;
     http_client& operator=(const http_client&) = delete;
@@ -45,7 +50,7 @@ class http_server
 {
 public:
     http_server(boost::asio::io_context& ioc,
-	boost::asio::ip::tcp::endpoint ep, http_handler handler,
+        boost::asio::ip::tcp::endpoint ep, http_handler handler,
         std::chrono::seconds timeout = default_timeout);
     http_server(const http_server&) = delete;
     http_server& operator=(const http_server&) = delete;
